@@ -136,7 +136,7 @@ const Navbar = () => {
           {links.map((l) => (
             <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} className="block text-sm" style={{ color: "rgba(232,232,240,0.55)" }}>{l.label}</a>
           ))}
-          <a href="#pricing" onClick={() => setMobileOpen(false)} className="block w-full text-center px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "linear-gradient(135deg, #7c5cbf, #9d7fe0)" }}>{t("nav.getStarted")}</a>
+          <a href="/auth" onClick={() => setMobileOpen(false)} className="block w-full text-center px-4 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "linear-gradient(135deg, #7c5cbf, #9d7fe0)" }}>{t("nav.getStarted")}</a>
         </div>
       )}
     </nav>
