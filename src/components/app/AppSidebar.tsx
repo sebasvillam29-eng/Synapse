@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, Library, MessageSquare, Settings, Zap,
-  ChevronLeft, ChevronRight, Crown
+  LayoutDashboard, Library, MessageSquare, Settings,
+  ChevronLeft, ChevronRight, Crown, Gem
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const navItems = [
+const mainNav = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
   { icon: Library, label: "Library", path: "/app/library" },
   { icon: MessageSquare, label: "AI Tutor", path: "/app/chat" },
-  { icon: Settings, label: "Settings", path: "/app/settings" },
 ];
 
 const AppSidebar = () => {
@@ -18,69 +17,103 @@ const AppSidebar = () => {
   const location = useLocation();
   const w = collapsed ? "w-[60px]" : "w-[240px]";
 
+  const isActive = (path: string) =>
+    path === "/app" ? location.pathname === "/app" : location.pathname.startsWith(path);
+
+  const renderNavItem = (item: typeof mainNav[0]) => {
+    const active = isActive(item.path);
+    const link = (
+      <Link
+        to={item.path}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ease-out relative ${
+          active
+            ? "bg-primary/10 text-primary border-l-2 border-primary"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/30 hover:translate-x-[2px]"
+        }`}
+      >
+        <item.icon className={`w-5 h-5 shrink-0 ${active ? "text-primary" : ""}`} />
+        {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
+      </Link>
+    );
+
+    if (collapsed) {
+      return (
+        <Tooltip key={item.path} delayDuration={100}>
+          <TooltipTrigger asChild>{link}</TooltipTrigger>
+          <TooltipContent side="right" className="bg-popover text-popover-foreground border-border">
+            {item.label}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+    return <div key={item.path}>{link}</div>;
+  };
+
+  const settingsActive = location.pathname === "/app/settings";
+  const settingsLink = (
+    <Link
+      to="/app/settings"
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ease-out ${
+        settingsActive
+          ? "bg-primary/10 text-primary border-l-2 border-primary"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted/30 hover:translate-x-[2px]"
+      }`}
+    >
+      <Settings className={`w-5 h-5 shrink-0 ${settingsActive ? "text-primary" : ""}`} />
+      {!collapsed && <span>Settings</span>}
+    </Link>
+  );
+
   return (
-    <aside className={`${w} h-screen sticky top-0 flex flex-col bg-sidebar-background border-r border-sidebar-border transition-all duration-300 ease-in-out shrink-0`}>
+    <aside className={`${w} h-screen sticky top-0 flex flex-col bg-sidebar-background border-r border-sidebar-border transition-all duration-[250ms] ease-in-out shrink-0`}>
       {/* Logo + toggle */}
       <div className="flex items-center justify-between px-3 h-16 border-b border-sidebar-border">
         <Link to="/app" className="flex items-center gap-2 overflow-hidden">
-          <Zap className="w-6 h-6 text-primary shrink-0" />
+          <Gem className="w-6 h-6 text-primary shrink-0" />
           {!collapsed && <span className="text-foreground font-bold text-lg whitespace-nowrap">Synapse</span>}
         </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-300"
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors duration-200"
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 py-4 px-2 space-y-1">
-        {navItems.map((item) => {
-          const active = location.pathname === item.path || (item.path === "/app" && location.pathname === "/app");
-          const content = (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 group relative ${
-                active
-                  ? "bg-accent text-accent-foreground border-l-2 border-primary ml-0"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30 hover:translate-x-[2px]"
-              }`}
-            >
-              <item.icon className={`w-5 h-5 shrink-0 ${active ? "text-primary" : ""}`} />
-              {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
-            </Link>
-          );
+      {/* Main nav */}
+      <nav className="flex-1 py-4 px-2 space-y-1 flex flex-col">
+        <div className="space-y-1">
+          {mainNav.map(renderNavItem)}
+        </div>
 
-          if (collapsed) {
-            return (
-              <Tooltip key={item.path} delayDuration={200}>
-                <TooltipTrigger asChild>{content}</TooltipTrigger>
-                <TooltipContent side="right" className="bg-popover text-popover-foreground border-border">
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
-
-          return content;
-        })}
+        {/* Settings pushed to bottom */}
+        <div className="mt-auto">
+          {collapsed ? (
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>{settingsLink}</TooltipTrigger>
+              <TooltipContent side="right" className="bg-popover text-popover-foreground border-border">
+                Settings
+              </TooltipContent>
+            </Tooltip>
+          ) : settingsLink}
+        </div>
       </nav>
 
       {/* User section */}
       <div className="p-3 border-t border-sidebar-border">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-primary-foreground"
-            style={{ background: "linear-gradient(135deg, hsl(262 83% 58%), hsl(173 80% 40%))" }}>
-            SG
+          <div
+            className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-primary-foreground"
+            style={{ background: "linear-gradient(135deg, hsl(262 83% 58%), hsl(173 80% 40%))" }}
+          >
+            S
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">Sebastian G.</p>
+              <p className="text-sm font-medium text-foreground truncate">Sebastian</p>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs px-1.5 py-0.5 rounded bg-accent text-accent-foreground">Free</span>
-                <Link to="/app/settings" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">Free plan</span>
+                <Link to="/app/settings" className="text-[11px] text-primary hover:underline flex items-center gap-0.5">
                   <Crown className="w-3 h-3" /> Upgrade →
                 </Link>
               </div>
