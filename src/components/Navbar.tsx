@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Zap } from "lucide-react";
-
-const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Demo", href: "#demo" },
-  { label: "Pricing", href: "#pricing" },
-];
+import { Menu, X, Zap, Globe } from "lucide-react";
+import { useLang } from "@/hooks/useLang";
 
 const Navbar = () => {
+  const { lang, setLang, t } = useLang();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navLinks = [
+    { label: t("nav.features"), href: "#features" },
+    { label: t("nav.howItWorks"), href: "#how-it-works" },
+    { label: t("nav.demo"), href: "#demo" },
+    { label: t("nav.pricing"), href: "#pricing" },
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -39,24 +41,41 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
+          {/* Language toggle */}
+          <button
+            onClick={() => setLang(lang === "en" ? "es" : "en")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-300"
+            title={lang === "en" ? "Cambiar a Español" : "Switch to English"}
+          >
+            <Globe className="w-4 h-4" />
+            {lang === "en" ? "ES" : "EN"}
+          </button>
           <a href="#demo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Try Demo
+            {t("nav.tryDemo")}
           </a>
           <a
             href="#pricing"
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all duration-300"
           >
-            Get Started
+            {t("nav.getStarted")}
           </a>
         </div>
 
-        <button className="md:hidden text-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="flex md:hidden items-center gap-2">
+          <button
+            onClick={() => setLang(lang === "en" ? "es" : "en")}
+            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Globe className="w-5 h-5" />
+          </button>
+          <button className="text-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
+            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border px-6 pb-6 space-y-4">
+        <div className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border px-6 pb-6 space-y-4 animate-fade-in">
           {navLinks.map((l) => (
             <a
               key={l.href}
@@ -72,7 +91,7 @@ const Navbar = () => {
             onClick={() => setMobileOpen(false)}
             className="block w-full text-center px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium"
           >
-            Get Started
+            {t("nav.getStarted")}
           </a>
         </div>
       )}
