@@ -70,13 +70,11 @@ const Dashboard = () => {
               key={i}
               className="rounded-2xl border border-border bg-card p-6 group hover:-translate-y-[3px] hover:shadow-[0_8px_30px_-10px_hsl(262_83%_58%/0.25)] transition-all duration-300 active:scale-[0.97]"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: set.color + "20", }}>
-                    {set.emoji}
-                  </div>
-                  <h3 className="text-sm font-semibold text-foreground leading-tight">{set.title}</h3>
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: set.color + "20" }}>
+                  {set.emoji}
                 </div>
+                <h3 className="text-sm font-semibold text-foreground leading-tight flex-1 min-w-0">{set.title}</h3>
                 <ProgressRing value={set.mastery} />
               </div>
               <p className="text-[13px] text-muted-foreground mb-3">{set.meta}</p>
