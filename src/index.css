@@ -120,6 +120,37 @@
   animation: marquee 25s linear infinite;
 }
 
+/* Shimmer gradient */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Loading bar */
+@keyframes loading {
+  0% { width: 0%; }
+  50% { width: 80%; }
+  100% { width: 100%; }
+}
+
+/* Fade in */
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Scale in */
+@keyframes scale-in {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out forwards;
+}
+
 /* Smooth scroll */
 html {
   scroll-behavior: smooth;
