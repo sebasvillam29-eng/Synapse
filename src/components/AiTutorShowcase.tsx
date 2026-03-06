@@ -1,205 +1,211 @@
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, Send, BookOpen, ExternalLink, ThumbsUp, ThumbsDown, Copy, RefreshCw } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
 
 const AiTutorShowcase = () => {
   const { t } = useLang();
-  const [started, setStarted] = useState(false);
-  const [typing, setTyping] = useState(false);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [showSources, setShowSources] = useState(false);
-  const [charIndex, setCharIndex] = useState(0);
-  const answerRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<Message[]>([
+    { role: "assistant", content: "" },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const chatRef = useRef<HTMLDivElement>(null);
 
-  const fullAnswer = t("tutor.answer");
-  const question = t("tutor.question");
-
-  const startDemo = () => {
-    setStarted(true);
-    setTyping(true);
-    setShowAnswer(false);
-    setShowSources(false);
-    setCharIndex(0);
-
-    setTimeout(() => {
-      setTyping(false);
-      setShowAnswer(true);
-    }, 1500);
-  };
-
-  // Typewriter effect
+  // Set initial greeting based on lang
   useEffect(() => {
-    if (showAnswer && charIndex < fullAnswer.length) {
-      const timer = setTimeout(() => setCharIndex((i) => i + 3), 15);
-      return () => clearTimeout(timer);
-    }
-    if (showAnswer && charIndex >= fullAnswer.length && !showSources) {
-      setTimeout(() => setShowSources(true), 400);
-    }
-  }, [showAnswer, charIndex, fullAnswer.length, showSources]);
+    setMessages([{ role: "assistant", content: t("tutor.greeting") }]);
+  }, [t("tutor.greeting")]);
 
-  // Auto-scroll
+  const scrollBottom = () => {
+    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  };
+
+  useEffect(scrollBottom, [messages, loading]);
+
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || loading) return;
+    const userMsg: Message = { role: "user", content: text.trim() };
+    const newMsgs = [...messages, userMsg];
+    setMessages(newMsgs);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-tutor-chat", {
+        body: { messages: newMsgs.map((m) => ({ role: m.role, content: m.content })) },
+      });
+      if (error) throw error;
+      setMessages([...newMsgs, { role: "assistant", content: data.reply }]);
+    } catch {
+      setMessages([...newMsgs, { role: "assistant", content: "Sorry, something went wrong. Please try again." }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chips = [t("tutor.chip1"), t("tutor.chip2"), t("tutor.chip3"), t("tutor.chip4")];
+
+  const renderMd = (text: string) =>
+    text
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+      .replace(/\n- /g, "<br/>• ")
+      .replace(/\n/g, "<br/>");
+
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (answerRef.current) {
-      answerRef.current.scrollTop = answerRef.current.scrollHeight;
-    }
-  }, [charIndex]);
-
-  const renderMarkdown = (text: string) => {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>')
-      .replace(/\n/g, "<br/>")
-      .replace(/(\d+)\. /g, '<br/><span class="text-primary font-semibold">$1.</span> ');
-  };
-
-  const reset = () => {
-    setStarted(false);
-    setTyping(false);
-    setShowAnswer(false);
-    setShowSources(false);
-    setCharIndex(0);
-  };
-
-  const sources = [
-    { label: t("tutor.source1"), icon: "📖" },
-    { label: t("tutor.source2"), icon: "📝" },
-    { label: t("tutor.source3"), icon: "🎓" },
-  ];
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) el.classList.add("visible"); }, { threshold: 0.15 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   return (
-    <section className="py-24 px-6 bg-muted/10">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            {t("tutor.title1")} <span className="text-gradient">{t("tutor.title2")}</span>
+    <section id="tutor" className="scroll-reveal" ref={ref} style={{ backgroundColor: "#0f0f18", padding: "100px 24px" }}>
+      <div className="max-w-[740px] mx-auto">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <p className="text-xs tracking-[0.14em] uppercase mb-4" style={{ color: "#9d7fe0" }}>{t("tutor.label")}</p>
+          <h2 className="font-serif-display" style={{ fontSize: "clamp(40px, 5vw, 64px)" }}>
+            <span className="text-white">{t("tutor.title1")}</span>
+            <span className="text-gradient">{t("tutor.titleGrad")}</span>
           </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">{t("tutor.subtitle")}</p>
+          <p className="text-[15px] mt-3" style={{ color: "rgba(232,232,240,0.45)" }}>{t("tutor.sub")}</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card overflow-hidden glow-primary">
+        {/* Chips */}
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          {chips.map((c, i) => (
+            <button
+              key={i}
+              onClick={() => sendMessage(c)}
+              className="px-4 py-2 rounded-full text-sm transition-all duration-300"
+              style={{
+                border: "1px solid rgba(255,255,255,0.12)",
+                backgroundColor: "#12121e",
+                color: "rgba(232,232,240,0.55)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "rgba(124,92,191,0.4)";
+                e.currentTarget.style.color = "#fff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+                e.currentTarget.style.color = "rgba(232,232,240,0.55)";
+              }}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        {/* Chat card */}
+        <div
+          className="rounded-[20px] overflow-hidden"
+          style={{
+            backgroundColor: "#12121e",
+            border: "1px solid rgba(255,255,255,0.12)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+          }}
+        >
           {/* Chat header */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 text-primary" />
+          <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+              style={{ background: "linear-gradient(135deg, #7c5cbf, #2563eb)" }}
+            >
+              🧠
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">Synapse AI Tutor</p>
-              <p className="text-xs text-secondary flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-secondary inline-block" />
-                Online
+              <p className="text-[15px] font-bold text-white">{t("tutor.name")}</p>
+              <p className="text-xs flex items-center gap-1.5" style={{ color: "#2dd4bf" }}>
+                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: "#2dd4bf" }} />
+                {t("tutor.online")}
               </p>
             </div>
           </div>
 
-          {/* Chat body */}
-          <div ref={answerRef} className="p-6 min-h-[400px] max-h-[500px] overflow-y-auto space-y-4">
-            {!started && (
-              <div className="flex flex-col items-center justify-center h-[350px] gap-6 animate-fade-in">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <MessageSquare className="w-8 h-8 text-primary" />
-                </div>
-                <p className="text-muted-foreground text-center text-sm max-w-sm">
-                  {t("tutor.subtitle")}
-                </p>
-                <button
-                  onClick={startDemo}
-                  className="px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all duration-300 hover:scale-[1.02] active:scale-[0.97]"
-                >
-                  {t("nav.tryDemo")}
-                </button>
-              </div>
-            )}
-
-            {started && (
-              <>
-                {/* User message */}
-                <div className="flex justify-end animate-fade-in">
-                  <div className="max-w-[80%] px-4 py-3 rounded-2xl rounded-br-md bg-primary text-primary-foreground text-sm">
-                    {question}
-                  </div>
-                </div>
-
-                {/* AI typing / answer */}
-                <div className="flex justify-start animate-fade-in" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
-                  <div className="max-w-[85%]">
-                    <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-muted/50 border border-border">
-                      {typing && (
-                        <div className="flex gap-1.5 py-2">
-                          <span className="w-2 h-2 rounded-full bg-primary ai-dot-1" />
-                          <span className="w-2 h-2 rounded-full bg-primary ai-dot-2" />
-                          <span className="w-2 h-2 rounded-full bg-primary ai-dot-3" />
-                        </div>
-                      )}
-                      {showAnswer && (
-                        <div
-                          className="text-sm text-foreground/90 leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: renderMarkdown(fullAnswer.slice(0, charIndex)) }}
-                        />
-                      )}
+          {/* Messages */}
+          <div ref={chatRef} className="flex flex-col gap-4 overflow-y-auto px-5 py-5" style={{ height: "340px" }}>
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
+                {m.role === "assistant" && (
+                  <div className="flex gap-2.5 max-w-[85%]">
+                    <div
+                      className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm flex-shrink-0 mt-0.5"
+                      style={{ background: "linear-gradient(135deg, #7c5cbf, #2563eb)" }}
+                    >
+                      🧠
                     </div>
-
-                    {/* Sources */}
-                    {showSources && (
-                      <div className="mt-3 animate-fade-in">
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-                          <BookOpen className="w-3 h-3" />
-                          {t("tutor.sources")}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {sources.map((s, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/50 border border-border text-xs text-foreground hover:bg-accent transition-all duration-300 cursor-pointer animate-scale-in"
-                              style={{ animationDelay: `${i * 100}ms`, animationFillMode: "both" }}
-                            >
-                              <span>{s.icon}</span>
-                              {s.label}
-                              <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Action row */}
-                        <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/50">
-                          {[
-                            { icon: ThumbsUp, label: "Like" },
-                            { icon: ThumbsDown, label: "Dislike" },
-                            { icon: Copy, label: "Copy" },
-                            { icon: RefreshCw, label: "Regenerate" },
-                          ].map((action, i) => (
-                            <button
-                              key={i}
-                              onClick={action.label === "Regenerate" ? reset : undefined}
-                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-300"
-                              title={action.label}
-                            >
-                              <action.icon className="w-3.5 h-3.5" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <div
+                      className="px-4 py-3 text-sm leading-relaxed"
+                      style={{
+                        backgroundColor: "#16162a",
+                        border: "1px solid rgba(255,255,255,0.07)",
+                        borderRadius: "4px 16px 16px 16px",
+                        color: "rgba(232,232,240,0.85)",
+                      }}
+                      dangerouslySetInnerHTML={{ __html: renderMd(m.content) }}
+                    />
                   </div>
+                )}
+                {m.role === "user" && (
+                  <div
+                    className="px-4 py-3 text-sm text-white max-w-[80%]"
+                    style={{
+                      backgroundColor: "rgba(124,92,191,0.25)",
+                      border: "1px solid rgba(124,92,191,0.3)",
+                      borderRadius: "16px 4px 16px 16px",
+                    }}
+                  >
+                    {m.content}
+                  </div>
+                )}
+              </div>
+            ))}
+            {loading && (
+              <div className="flex gap-2.5">
+                <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm flex-shrink-0" style={{ background: "linear-gradient(135deg, #7c5cbf, #2563eb)" }}>🧠</div>
+                <div className="px-4 py-3 flex gap-1.5" style={{ backgroundColor: "#16162a", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "4px 16px 16px 16px" }}>
+                  <span className="w-2 h-2 rounded-full ai-dot-1" style={{ backgroundColor: "#9d7fe0" }} />
+                  <span className="w-2 h-2 rounded-full ai-dot-2" style={{ backgroundColor: "#9d7fe0" }} />
+                  <span className="w-2 h-2 rounded-full ai-dot-3" style={{ backgroundColor: "#9d7fe0" }} />
                 </div>
-              </>
+              </div>
             )}
           </div>
 
           {/* Input */}
-          <div className="border-t border-border px-4 py-3 flex items-center gap-3">
+          <div className="flex items-center gap-2.5 px-4 py-3.5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
             <input
               type="text"
-              placeholder={t("tutor.askPlaceholder")}
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-              readOnly
-              onClick={!started ? startDemo : undefined}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
+              placeholder={t("tutor.placeholder")}
+              className="flex-1 bg-transparent text-sm text-white outline-none px-4 py-2.5 rounded-[10px] transition-all duration-300"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(124,92,191,0.5)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)")}
             />
             <button
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                started ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              }`}
+              onClick={() => sendMessage(input)}
+              disabled={!input.trim() || loading}
+              className="px-[18px] py-[11px] rounded-xl text-white text-sm font-medium transition-all duration-300"
+              style={{
+                background: "linear-gradient(135deg, #7c5cbf, #9d7fe0)",
+                opacity: !input.trim() || loading ? 0.4 : 1,
+              }}
             >
-              <Send className="w-4 h-4" />
+              {t("tutor.send")}
             </button>
           </div>
         </div>
