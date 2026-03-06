@@ -1,13 +1,6 @@
 import { useState, useEffect } from "react";
-import { Lock } from "lucide-react";
+import { Lock, FileText, Sparkles, BookOpen, Brain } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
-
-const UploadIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#7c5cbf" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 20V8M16 8L11 13M16 8L21 13" />
-    <path d="M6 22V25C6 26.1 6.9 27 8 27H24C25.1 27 26 26.1 26 25V22" />
-  </svg>
-);
 
 const Hero = () => {
   const { t } = useLang();
@@ -17,30 +10,22 @@ const Hero = () => {
   const [outputsShown, setOutputsShown] = useState(0);
   const [cycle, setCycle] = useState(0);
 
-  // Master timer: cycles phases
   useEffect(() => {
-    setPhase(0);
-    setProgress(0);
-    setStatusIdx(0);
-    setOutputsShown(0);
-
+    setPhase(0); setProgress(0); setStatusIdx(0); setOutputsShown(0);
     const t1 = setTimeout(() => setPhase(1), 1000);
     const t2 = setTimeout(() => setPhase(2), 2200);
     const t3 = setTimeout(() => setPhase(3), 5000);
     const t4 = setTimeout(() => setCycle((c) => c + 1), 8000);
-
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, [cycle]);
 
-  // Progress bar for phase 2
   useEffect(() => {
     if (phase !== 2) return;
     setProgress(0);
     const start = Date.now();
-    const dur = 2500;
     let raf: number;
     const frame = () => {
-      const pct = Math.min(100, ((Date.now() - start) / dur) * 100);
+      const pct = Math.min(100, ((Date.now() - start) / 2500) * 100);
       setProgress(pct);
       if (pct < 100) raf = requestAnimationFrame(frame);
     };
@@ -48,7 +33,6 @@ const Hero = () => {
     return () => cancelAnimationFrame(raf);
   }, [phase]);
 
-  // Status cycling for phase 2
   useEffect(() => {
     if (phase !== 2) return;
     setStatusIdx(0);
@@ -56,22 +40,20 @@ const Hero = () => {
     return () => clearInterval(i);
   }, [phase]);
 
-  // Output staggered reveal for phase 3
   useEffect(() => {
     if (phase !== 3) return;
     setOutputsShown(0);
-    const timers = [0, 120, 240, 360].map((d, i) =>
-      setTimeout(() => setOutputsShown(i + 1), d)
-    );
+    const timers = [0, 120, 240, 360].map((d, idx) => setTimeout(() => setOutputsShown(idx + 1), d));
     return () => timers.forEach(clearTimeout);
   }, [phase]);
 
   const statuses = [t("hero.status1"), t("hero.status2"), t("hero.status3"), t("hero.status4")];
+
   const outputs = [
-    { emoji: "📄", text: t("hero.out1"), color: "#9d7fe0" },
-    { emoji: "🃏", text: t("hero.out2"), color: "#2dd4bf" },
-    { emoji: "📝", text: t("hero.out3"), color: "#9d7fe0" },
-    { emoji: "🎓", text: t("hero.out4"), color: "#2dd4bf" },
+    { icon: <FileText size={16} />, text: t("hero.out1"), color: "#9d7fe0" },
+    { icon: <Sparkles size={16} />, text: t("hero.out2"), color: "#2dd4bf" },
+    { icon: <BookOpen size={16} />, text: t("hero.out3"), color: "#9d7fe0" },
+    { icon: <Brain size={16} />, text: t("hero.out4"), color: "#2dd4bf" },
   ];
 
   return (
@@ -112,7 +94,7 @@ const Hero = () => {
           </div>
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT — Workspace Mockup */}
         <div className="relative animate-fade-in" style={{ animationDelay: "0.5s", animationFillMode: "both" }}>
           <div className="animate-float flex items-start gap-3">
             <div className="flex-1 rounded-2xl overflow-hidden" style={{ backgroundColor: "#13131f", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,92,191,0.15)" }}>
@@ -129,19 +111,33 @@ const Hero = () => {
               <div className="p-5 min-h-[260px]">
                 {phase === 0 && (
                   <div className="flex flex-col items-center justify-center gap-3 rounded-xl py-12 animate-fade-in" style={{ border: "2px dashed rgba(124,92,191,0.4)", backgroundColor: "rgba(124,92,191,0.04)" }}>
-                    <UploadIcon />
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: "rgba(124,92,191,0.1)" }}>
+                      <FileText size={24} style={{ color: "#9d7fe0" }} />
+                    </div>
                     <span className="text-sm" style={{ color: "rgba(232,232,240,0.45)" }}>{t("hero.drop")}</span>
                   </div>
                 )}
                 {phase === 1 && (
                   <div className="space-y-3 animate-fade-in">
-                    <div className="flex items-center gap-2"><span className="text-lg">📄</span><span className="text-sm text-white">Biology_Ch4_Photosynthesis.pdf</span></div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs" style={{ backgroundColor: "rgba(124,92,191,0.15)", color: "#9d7fe0" }}>📄 {t("hero.pdfDetected")}</div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(124,92,191,0.15)" }}>
+                        <FileText size={18} style={{ color: "#9d7fe0" }} />
+                      </div>
+                      <span className="text-sm text-white">Biology_Ch4_Photosynthesis.pdf</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ backgroundColor: "rgba(124,92,191,0.15)", color: "#9d7fe0", border: "1px solid rgba(124,92,191,0.25)" }}>
+                      <FileText size={12} /> {t("hero.pdfDetected")}
+                    </div>
                   </div>
                 )}
                 {phase === 2 && (
                   <div className="space-y-4 animate-fade-in">
-                    <div className="flex items-center gap-2"><span className="text-lg">📄</span><span className="text-sm text-white">Biology_Ch4_Photosynthesis.pdf</span></div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(124,92,191,0.15)" }}>
+                        <Sparkles size={18} style={{ color: "#9d7fe0" }} />
+                      </div>
+                      <span className="text-sm text-white">Biology_Ch4_Photosynthesis.pdf</span>
+                    </div>
                     <div className="h-1 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
                       <div className="h-full rounded-full" style={{ width: `${progress}%`, background: "linear-gradient(90deg, #9d7fe0, #2dd4bf)", transition: "none" }} />
                     </div>
@@ -157,7 +153,9 @@ const Hero = () => {
                   <div className="space-y-2.5">
                     {outputs.map((o, i) => (
                       <div key={i} className="flex items-center gap-3 px-3.5 py-2.5 rounded-[10px]" style={{ backgroundColor: "rgba(124,92,191,0.08)", border: "1px solid rgba(124,92,191,0.2)", opacity: i < outputsShown ? 1 : 0, transform: i < outputsShown ? "translateY(0)" : "translateY(8px)", transition: "all 0.3s ease" }}>
-                        <span className="text-base">{o.emoji}</span>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${o.color}20`, color: o.color }}>
+                          {o.icon}
+                        </div>
                         <span className="text-sm text-white flex-1">{o.text}</span>
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: o.color }} />
                       </div>
@@ -167,7 +165,6 @@ const Hero = () => {
               </div>
             </div>
 
-            {/* Dots */}
             <div className="hidden lg:flex flex-col items-center gap-2 pt-20">
               {[0, 1, 2, 3, 4].map((i) => (
                 <div key={i} className="rounded-full" style={{ width: i === 2 ? "8px" : "6px", height: i === 2 ? "8px" : "6px", backgroundColor: i === 2 ? "#9d7fe0" : "rgba(255,255,255,0.12)", transform: i === 2 ? "scale(1.3)" : "scale(1)", transition: "all 0.4s ease" }} />
