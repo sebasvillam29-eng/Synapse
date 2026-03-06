@@ -98,7 +98,7 @@ const Navbar = () => {
           </div>
 
           <a
-            href="#"
+            href="/auth"
             className="text-sm transition-colors duration-300"
             style={{ color: "rgba(232,232,240,0.55)" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
@@ -108,7 +108,7 @@ const Navbar = () => {
           </a>
 
           <a
-            href="#pricing"
+            href="/auth"
             className="px-5 py-2 rounded-xl text-sm font-medium text-white transition-all duration-300 hover:opacity-90"
             style={{
               background: "linear-gradient(135deg, #7c5cbf, #9d7fe0)",
