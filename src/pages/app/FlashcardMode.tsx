@@ -157,17 +157,20 @@ const FlashcardMode = () => {
             : "opacity-0 translate-y-4 pointer-events-none"
         }`}
       >
-        <button
-          onClick={() => rate("hard")}
-          className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
-          style={{
-            backgroundColor: "hsl(0 84% 60% / 0.1)",
-            border: "1px solid hsl(0 84% 60% / 0.3)",
-            color: "hsl(0 84% 60%)",
-          }}
-        >
-          😓 Hard
-        </button>
+        <div className="flex items-center gap-1">
+          <KbdHint keys="←" />
+          <button
+            onClick={() => rate("hard")}
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: "hsl(0 84% 60% / 0.1)",
+              border: "1px solid hsl(0 84% 60% / 0.3)",
+              color: "hsl(0 84% 60%)",
+            }}
+          >
+            😓 Hard
+          </button>
+        </div>
         <button
           onClick={() => rate("okay")}
           className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
