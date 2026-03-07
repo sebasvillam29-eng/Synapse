@@ -11,6 +11,7 @@ const mainNav = [
   { icon: Library, label: "Library", path: "/app/library" },
   { icon: MessageSquare, label: "AI Tutor", path: "/app/chat" },
   { icon: null, label: "Full Exam", path: "/app/exam", emoji: "🎓", proBadge: true },
+  { icon: null, label: "Mind Map", path: "/app/mindmap", emoji: "🗺️", proBadge: true },
 ];
 
 const AppSidebar = () => {
