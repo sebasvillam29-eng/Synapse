@@ -208,6 +208,7 @@ export type Database = {
       study_sessions: {
         Row: {
           created_at: string
+          file_url: string | null
           id: string
           notes_text: string
           title: string
@@ -215,6 +216,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          file_url?: string | null
           id?: string
           notes_text?: string
           title?: string
@@ -222,6 +224,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          file_url?: string | null
           id?: string
           notes_text?: string
           title?: string
