@@ -223,7 +223,6 @@ const ExamPage = () => {
         disabled={!ready}
         className="w-full text-[15px] font-semibold transition-all duration-[250ms]"
         style={{
-          marginTop: ready ? 0 : 24,
           marginTop: 16,
           padding: 14,
           borderRadius: 10,
