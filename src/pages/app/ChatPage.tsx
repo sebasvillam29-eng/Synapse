@@ -113,6 +113,9 @@ const ChatPage = () => {
                 <Zap className="w-8 h-8 text-primary" />
               </div>
               <h2 className="text-lg font-semibold text-foreground">How can I help you study?</h2>
+              <p className="text-sm text-muted-foreground text-center max-w-sm -mt-2">
+                I've read your study sets. Ask me anything about them.
+              </p>
               <div className="grid grid-cols-2 gap-3 max-w-lg">
                 {suggestions.map((s, i) => (
                   <button

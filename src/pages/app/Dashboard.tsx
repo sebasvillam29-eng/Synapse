@@ -1,6 +1,6 @@
 import { useCountUp } from "@/hooks/useCountUp";
 import { Link } from "react-router-dom";
-import { FileText, Layers, Brain, Flame, Upload, ClipboardList, MessageSquare, TrendingUp } from "lucide-react";
+import { FileText, Layers, Brain, Flame, Upload, ClipboardList, MessageSquare, TrendingUp, ArrowRight } from "lucide-react";
 
 const stats = [
   { label: "Notes processed", value: 12, icon: FileText, suffix: "", badge: null },
@@ -57,35 +57,41 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Recent Study Sets */}
+      {/* Recent Study Sets — or onboarding if empty */}
       <div className="mt-12 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Recent study sets</h2>
-          <Link to="/app/library" className="text-sm text-primary hover:underline">View all →</Link>
-        </div>
-        <div className="grid md:grid-cols-3 gap-4">
-          {recentSets.map((set, i) => (
-            <Link
-              to={`/app/workspace/${i + 1}`}
-              key={i}
-              className="rounded-2xl border border-border bg-card p-6 group hover:-translate-y-[3px] hover:shadow-[0_8px_30px_-10px_hsl(262_83%_58%/0.25)] transition-all duration-300 active:scale-[0.97]"
-            >
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: set.color + "20" }}>
-                  {set.emoji}
-                </div>
-                <h3 className="text-sm font-semibold text-foreground leading-tight flex-1 min-w-0">{set.title}</h3>
-                <ProgressRing value={set.mastery} />
-              </div>
-              <p className="text-[13px] text-muted-foreground mb-3">{set.meta}</p>
-              <div className="flex gap-2 flex-wrap">
-                {set.tags.map((tag) => (
-                  <span key={tag} className="text-[11px] px-2 py-0.5 rounded-full border border-border text-muted-foreground">{tag}</span>
-                ))}
-              </div>
-            </Link>
-          ))}
-        </div>
+        {recentSets.length === 0 ? (
+          <OnboardingStepper />
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Recent study sets</h2>
+              <Link to="/app/library" className="text-sm text-primary hover:underline">View all →</Link>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              {recentSets.map((set, i) => (
+                <Link
+                  to={`/app/workspace/${i + 1}`}
+                  key={i}
+                  className="rounded-2xl border border-border bg-card p-6 group hover:-translate-y-[3px] hover:shadow-[0_8px_30px_-10px_hsl(262_83%_58%/0.25)] transition-all duration-300 active:scale-[0.97]"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: set.color + "20" }}>
+                      {set.emoji}
+                    </div>
+                    <h3 className="text-sm font-semibold text-foreground leading-tight flex-1 min-w-0">{set.title}</h3>
+                    <ProgressRing value={set.mastery} />
+                  </div>
+                  <p className="text-[13px] text-muted-foreground mb-3">{set.meta}</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {set.tags.map((tag) => (
+                      <span key={tag} className="text-[11px] px-2 py-0.5 rounded-full border border-border text-muted-foreground">{tag}</span>
+                    ))}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Start Something New */}
@@ -179,6 +185,53 @@ const ProgressRing = ({ value }: { value: number }) => {
         />
       </svg>
       <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-foreground">{value}%</span>
+    </div>
+  );
+};
+
+/* ── Onboarding Stepper (shown when 0 study sets) ── */
+const OnboardingStepper = () => {
+  const steps = [
+    { num: 1, label: "Upload", active: true },
+    { num: 2, label: "Generate", active: false },
+    { num: 3, label: "Study", active: false },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-8 text-center">
+      <div className="flex items-center justify-center gap-4 mb-6">
+        {steps.map((step, i) => (
+          <div key={step.num} className="flex items-center gap-4">
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                  step.active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {step.num}
+              </div>
+              <span className={`text-xs font-medium ${step.active ? "text-foreground" : "text-muted-foreground"}`}>
+                {step.label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className="w-12 h-[2px] bg-border -mt-5" />
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="text-sm text-muted-foreground mb-5">
+        Start with step 1 — upload any PDF or paste your notes.
+      </p>
+      <Link
+        to="/app/workspace/new"
+        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground transition-all duration-300 hover:scale-[1.02] active:scale-[0.97]"
+        style={{ background: "linear-gradient(135deg, hsl(262 83% 58%), hsl(173 80% 40%))" }}
+      >
+        Upload now <ArrowRight className="w-4 h-4" />
+      </Link>
     </div>
   );
 };

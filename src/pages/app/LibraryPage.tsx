@@ -73,12 +73,30 @@ const LibraryPage = () => {
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4 animate-fade-in">
-          <div className="w-20 h-20 rounded-2xl bg-muted/30 flex items-center justify-center">
-            <BookOpen className="w-10 h-10 text-muted-foreground" />
-          </div>
-          <p className="text-muted-foreground">No items found</p>
-          <button className="text-sm text-primary hover:underline">Upload your first PDF →</button>
+        <div className="flex flex-col items-center justify-center py-24 gap-5 animate-fade-in">
+          {/* SVG Document with sparkle */}
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="16" y="8" width="40" height="52" rx="4" stroke="hsl(var(--muted-foreground))" strokeWidth="2" fill="hsl(var(--muted) / 0.3)" />
+            <path d="M44 8v12h12" stroke="hsl(var(--muted-foreground))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <line x1="24" y1="30" x2="48" y2="30" stroke="hsl(var(--muted-foreground) / 0.4)" strokeWidth="2" strokeLinecap="round" />
+            <line x1="24" y1="37" x2="44" y2="37" stroke="hsl(var(--muted-foreground) / 0.4)" strokeWidth="2" strokeLinecap="round" />
+            <line x1="24" y1="44" x2="40" y2="44" stroke="hsl(var(--muted-foreground) / 0.4)" strokeWidth="2" strokeLinecap="round" />
+            {/* Sparkle */}
+            <path d="M62 18l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" fill="hsl(var(--primary))" className="animate-pulse" />
+            <path d="M54 42l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z" fill="hsl(173 80% 40%)" className="animate-pulse" style={{ animationDelay: "500ms" }} />
+          </svg>
+          <h3 className="text-lg font-semibold text-foreground">Your library is empty</h3>
+          <p className="text-sm text-muted-foreground text-center max-w-xs">
+            Upload your first PDF or paste notes to get started. Takes 10 seconds.
+          </p>
+          <Link
+            to="/app/workspace/new"
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground transition-all duration-300 hover:scale-[1.02] active:scale-[0.97]"
+            style={{ background: "linear-gradient(135deg, hsl(262 83% 58%), hsl(173 80% 40%))" }}
+          >
+            Upload your first document →
+          </Link>
+          <p className="text-xs text-muted-foreground">or drag a file anywhere on this page</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
