@@ -3,9 +3,10 @@ import {
   MessageSquare, Send, Plus, Trash2, ThumbsUp, ThumbsDown,
   Copy, RefreshCw, BookOpen, ExternalLink, Zap
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
-  role: "user" | "ai";
+  role: "user" | "assistant";
   content: string;
   sources?: { icon: string; label: string }[];
 }
@@ -25,16 +26,6 @@ const mockChats = [
   { id: 3, title: "History essay prep", time: "3d ago" },
 ];
 
-const aiResponse: Message = {
-  role: "ai",
-  content: "The **Calvin cycle** (light-independent reactions) takes place in the **stroma** of chloroplasts.\n\nIt has three main stages:\n1. **Carbon fixation** — CO₂ is attached to RuBP by RuBisCO\n2. **Reduction** — 3-PGA is reduced to G3P using ATP and NADPH\n3. **Regeneration** — RuBP is regenerated from remaining G3P\n\nFor every 3 CO₂ molecules that enter, one G3P exits the cycle to be used in glucose synthesis.",
-  sources: [
-    { icon: "📖", label: "Campbell Biology, Ch. 10.3" },
-    { icon: "📝", label: "Lecture Notes — Week 4" },
-    { icon: "🎓", label: "Khan Academy" },
-  ],
-};
-
 const ChatPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -44,15 +35,29 @@ const ChatPage = () => {
   const endRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
-    setMessages((m) => [...m, { role: "user", content: text.trim() }]);
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || typing) return;
+    const userMsg: Message = { role: "user", content: text.trim() };
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput("");
     setTyping(true);
-    setTimeout(() => {
+
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-tutor-chat", {
+        body: { messages: updatedMessages.map(m => ({ role: m.role, content: m.content })) },
+      });
+
+      if (error) throw error;
+
+      const reply = data?.reply ?? "Sorry, something went wrong. Try again.";
+      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+    } catch (e) {
+      console.error("AI chat error:", e);
+      setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Something went wrong. Try again." }]);
+    } finally {
       setTyping(false);
-      setMessages((m) => [...m, aiResponse]);
-    }, 2000);
+    }
   };
 
   useEffect(() => {
@@ -135,7 +140,7 @@ const ChatPage = () => {
                 <div
                   key={i}
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
-                  onMouseEnter={() => msg.role === "ai" && setHoveredMsg(i)}
+                  onMouseEnter={() => msg.role === "assistant" && setHoveredMsg(i)}
                   onMouseLeave={() => setHoveredMsg(null)}
                 >
                   <div className={`max-w-[80%] ${msg.role === "user" ? "" : ""}`}>
@@ -144,7 +149,7 @@ const ChatPage = () => {
                         ? "bg-primary text-primary-foreground rounded-br-md"
                         : "bg-card border border-border rounded-bl-md"
                     }`}>
-                      {msg.role === "ai" ? (
+                      {msg.role === "assistant" ? (
                         <div className="text-foreground/90 leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
                       ) : (
                         msg.content
@@ -169,7 +174,7 @@ const ChatPage = () => {
                     )}
 
                     {/* Action row */}
-                    {msg.role === "ai" && hoveredMsg === i && (
+                    {msg.role === "assistant" && hoveredMsg === i && (
                       <div className="flex gap-2 mt-2 animate-fade-in">
                         {[ThumbsUp, ThumbsDown, Copy, RefreshCw].map((Icon, ai) => (
                           <button key={ai} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all duration-300">
@@ -213,8 +218,9 @@ const ChatPage = () => {
             />
             <button
               onClick={() => sendMessage(input)}
-              className={`p-3 rounded-xl transition-all duration-300 ${
-                input.trim() ? "bg-primary text-primary-foreground glow-primary" : "bg-muted text-muted-foreground"
+              disabled={typing || !input.trim()}
+              className={`p-3 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                input.trim() && !typing ? "bg-primary text-primary-foreground glow-primary" : "bg-muted text-muted-foreground"
               }`}
             >
               <Send className="w-4 h-4" />
