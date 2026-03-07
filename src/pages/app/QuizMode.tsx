@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Clock, Check, X } from "lucide-react";
+import KbdHint from "@/components/app/KbdHint";
 
 const mockQuestions = [
   { q: "What is the primary function of photosynthesis?", options: ["Cellular respiration", "Converting light energy to glucose", "Breaking down proteins", "Absorbing minerals"], correct: 1 },
