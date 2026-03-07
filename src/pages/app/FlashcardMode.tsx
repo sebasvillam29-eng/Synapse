@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import KbdHint from "@/components/app/KbdHint";
 
 const mockCards = [
   { front: "What is the primary function of photosynthesis?", back: "To convert light energy into chemical energy (glucose) using CO₂ and water." },
@@ -83,7 +84,7 @@ const FlashcardMode = () => {
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
         >
-          <ArrowLeft className="w-4 h-4" /> Exit
+          <ArrowLeft className="w-4 h-4" /> Back to Biology Ch.4
         </button>
         <h2
           className="text-lg text-foreground"
@@ -156,17 +157,20 @@ const FlashcardMode = () => {
             : "opacity-0 translate-y-4 pointer-events-none"
         }`}
       >
-        <button
-          onClick={() => rate("hard")}
-          className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
-          style={{
-            backgroundColor: "hsl(0 84% 60% / 0.1)",
-            border: "1px solid hsl(0 84% 60% / 0.3)",
-            color: "hsl(0 84% 60%)",
-          }}
-        >
-          😓 Hard
-        </button>
+        <div className="flex items-center gap-1">
+          <KbdHint keys="←" />
+          <button
+            onClick={() => rate("hard")}
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: "hsl(0 84% 60% / 0.1)",
+              border: "1px solid hsl(0 84% 60% / 0.3)",
+              color: "hsl(0 84% 60%)",
+            }}
+          >
+            😓 Hard
+          </button>
+        </div>
         <button
           onClick={() => rate("okay")}
           className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
@@ -178,24 +182,32 @@ const FlashcardMode = () => {
         >
           😐 Okay
         </button>
-        <button
-          onClick={() => rate("easy")}
-          className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
-          style={{
-            backgroundColor: "hsl(142 70% 45% / 0.1)",
-            border: "1px solid hsl(142 70% 45% / 0.3)",
-            color: "hsl(142 70% 45%)",
-          }}
-        >
-          😊 Easy
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => rate("easy")}
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: "hsl(142 70% 45% / 0.1)",
+              border: "1px solid hsl(142 70% 45% / 0.3)",
+              color: "hsl(142 70% 45%)",
+            }}
+          >
+            😊 Easy
+          </button>
+          <KbdHint keys="→" />
+        </div>
       </div>
 
-      {/* Keyboard hints */}
-      <div className="text-center pb-6">
-        <p className="text-[12px] text-muted-foreground">
-          Space to flip &nbsp;·&nbsp; ← Hard &nbsp;·&nbsp; → Easy
-        </p>
+      {/* Keyboard hints + Space hint near card */}
+      <div className="text-center pb-6 flex items-center justify-center gap-3">
+        <KbdHint keys="Space" />
+        <span className="text-[12px] text-muted-foreground">to flip</span>
+        <span className="text-muted-foreground">·</span>
+        <KbdHint keys="←" />
+        <span className="text-[12px] text-muted-foreground">Hard</span>
+        <span className="text-muted-foreground">·</span>
+        <KbdHint keys="→" />
+        <span className="text-[12px] text-muted-foreground">Easy</span>
       </div>
     </div>
   );

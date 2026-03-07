@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
+import Breadcrumbs from "./Breadcrumbs";
 
 const fullScreenRoutes = ["/app/flashcards", "/app/quiz"];
 
@@ -18,8 +19,9 @@ const AppLayout = () => {
   return (
     <div className="flex min-h-screen bg-background text-foreground w-full">
       <AppSidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="animate-fade-in">
+      <main className="flex-1 overflow-auto flex flex-col">
+        <Breadcrumbs />
+        <div className="animate-fade-in flex-1">
           <Outlet />
         </div>
       </main>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Clock, Check, X } from "lucide-react";
+import KbdHint from "@/components/app/KbdHint";
 
 const mockQuestions = [
   { q: "What is the primary function of photosynthesis?", options: ["Cellular respiration", "Converting light energy to glucose", "Breaking down proteins", "Absorbing minerals"], correct: 1 },
@@ -46,6 +47,17 @@ const QuizMode = () => {
     }, 300);
   }, [selected]);
 
+  // Enter key for next
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && selected !== null && !sliding && !done) {
+        next();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selected, sliding, done, next]);
+
   if (done || timeLeft === 0) {
     const finalAnswers = done ? answers : [...answers, selected];
     return <ResultsScreen answers={finalAnswers} questions={mockQuestions} time={900 - timeLeft} />;
@@ -67,7 +79,7 @@ const QuizMode = () => {
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
         >
-          <ArrowLeft className="w-4 h-4" /> Exit
+          <ArrowLeft className="w-4 h-4" /> Back to Biology Ch.4
         </button>
         <h2
           className="text-lg text-foreground"
@@ -159,14 +171,16 @@ const QuizMode = () => {
             })}
           </div>
 
-          {/* Next button */}
           {selected !== null && (
-            <button
-              onClick={next}
-              className="mt-6 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-all duration-300 animate-fade-in"
-            >
-              Next <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2 mt-6 animate-fade-in">
+              <button
+                onClick={next}
+                className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-all duration-300"
+              >
+                Next <ArrowRight className="w-4 h-4" />
+              </button>
+              <KbdHint keys="Enter" />
+            </div>
           )}
         </div>
       </div>

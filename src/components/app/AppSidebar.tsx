@@ -17,8 +17,16 @@ const AppSidebar = () => {
   const location = useLocation();
   const w = collapsed ? "w-[60px]" : "w-[240px]";
 
-  const isActive = (path: string) =>
-    path === "/app" ? location.pathname === "/app" : location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    if (path === "/app") return location.pathname === "/app";
+    if (path === "/app/library") {
+      return location.pathname === "/app/library" ||
+        location.pathname.startsWith("/app/workspace/") ||
+        location.pathname.startsWith("/app/flashcards/") ||
+        location.pathname.startsWith("/app/quiz/");
+    }
+    return location.pathname.startsWith(path);
+  };
 
   const renderNavItem = (item: typeof mainNav[0]) => {
     const active = isActive(item.path);

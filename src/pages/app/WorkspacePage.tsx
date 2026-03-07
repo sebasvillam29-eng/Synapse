@@ -4,6 +4,7 @@ import {
   Upload, FileText, Layers, ClipboardCheck, GraduationCap, GitBranch,
   X, ChevronLeft, ChevronRight, Edit3, RefreshCw, Copy, Download,
 } from "lucide-react";
+import RemoveConfirmation from "@/components/app/RemoveConfirmation";
 
 type PdfState = "empty" | "processing" | "loaded";
 type ToolId = "summary" | "flashcards" | "quiz" | "exam" | "mindmap";
@@ -130,9 +131,7 @@ const WorkspacePage = () => {
                   <FileText className="w-4 h-4 text-primary" />
                   <span className="font-medium text-foreground">Biology_Ch4.pdf</span>
                 </div>
-                <button onClick={() => setPdfState("empty")} className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors">
-                  <X className="w-3 h-3" /> Remove
-                </button>
+                <RemoveConfirmation onConfirm={() => setPdfState("empty")} />
               </div>
               {/* Mock PDF page */}
               <div className="flex-1 p-4">
