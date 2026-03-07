@@ -160,14 +160,16 @@ const QuizMode = () => {
             })}
           </div>
 
-          {/* Next button */}
           {selected !== null && (
-            <button
-              onClick={next}
-              className="mt-6 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-all duration-300 animate-fade-in"
-            >
-              Next <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2 mt-6 animate-fade-in">
+              <button
+                onClick={next}
+                className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-all duration-300"
+              >
+                Next <ArrowRight className="w-4 h-4" />
+              </button>
+              <KbdHint keys="Enter" />
+            </div>
           )}
         </div>
       </div>

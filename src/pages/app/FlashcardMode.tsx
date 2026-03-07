@@ -182,24 +182,32 @@ const FlashcardMode = () => {
         >
           😐 Okay
         </button>
-        <button
-          onClick={() => rate("easy")}
-          className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
-          style={{
-            backgroundColor: "hsl(142 70% 45% / 0.1)",
-            border: "1px solid hsl(142 70% 45% / 0.3)",
-            color: "hsl(142 70% 45%)",
-          }}
-        >
-          😊 Easy
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => rate("easy")}
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: "hsl(142 70% 45% / 0.1)",
+              border: "1px solid hsl(142 70% 45% / 0.3)",
+              color: "hsl(142 70% 45%)",
+            }}
+          >
+            😊 Easy
+          </button>
+          <KbdHint keys="→" />
+        </div>
       </div>
 
-      {/* Keyboard hints */}
-      <div className="text-center pb-6">
-        <p className="text-[12px] text-muted-foreground">
-          Space to flip &nbsp;·&nbsp; ← Hard &nbsp;·&nbsp; → Easy
-        </p>
+      {/* Keyboard hints + Space hint near card */}
+      <div className="text-center pb-6 flex items-center justify-center gap-3">
+        <KbdHint keys="Space" />
+        <span className="text-[12px] text-muted-foreground">to flip</span>
+        <span className="text-muted-foreground">·</span>
+        <KbdHint keys="←" />
+        <span className="text-[12px] text-muted-foreground">Hard</span>
+        <span className="text-muted-foreground">·</span>
+        <KbdHint keys="→" />
+        <span className="text-[12px] text-muted-foreground">Easy</span>
       </div>
     </div>
   );
