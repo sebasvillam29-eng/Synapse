@@ -218,8 +218,9 @@ const ChatPage = () => {
             />
             <button
               onClick={() => sendMessage(input)}
-              className={`p-3 rounded-xl transition-all duration-300 ${
-                input.trim() ? "bg-primary text-primary-foreground glow-primary" : "bg-muted text-muted-foreground"
+              disabled={typing || !input.trim()}
+              className={`p-3 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                input.trim() && !typing ? "bg-primary text-primary-foreground glow-primary" : "bg-muted text-muted-foreground"
               }`}
             >
               <Send className="w-4 h-4" />
