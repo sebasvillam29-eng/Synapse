@@ -1,1 +1,7 @@
 project_id = "udyieyvzmryqsaechior"
+
+[functions.generate-content]
+verify_jwt = false
+
+[functions.ai-tutor-chat]
+verify_jwt = false
