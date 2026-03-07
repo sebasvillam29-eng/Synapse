@@ -4,6 +4,7 @@ import {
   Upload, FileText, Layers, ClipboardCheck, GraduationCap, GitBranch,
   X, ChevronLeft, ChevronRight, Edit3, RefreshCw, Copy, Download,
 } from "lucide-react";
+import RemoveConfirmation from "@/components/app/RemoveConfirmation";
 
 type PdfState = "empty" | "processing" | "loaded";
 type ToolId = "summary" | "flashcards" | "quiz" | "exam" | "mindmap";
