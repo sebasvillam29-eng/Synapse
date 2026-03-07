@@ -174,7 +174,7 @@ const ChatPage = () => {
                     )}
 
                     {/* Action row */}
-                    {msg.role === "ai" && hoveredMsg === i && (
+                    {msg.role === "assistant" && hoveredMsg === i && (
                       <div className="flex gap-2 mt-2 animate-fade-in">
                         {[ThumbsUp, ThumbsDown, Copy, RefreshCw].map((Icon, ai) => (
                           <button key={ai} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all duration-300">
