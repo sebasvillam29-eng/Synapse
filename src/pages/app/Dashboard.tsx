@@ -189,4 +189,51 @@ const ProgressRing = ({ value }: { value: number }) => {
   );
 };
 
+/* ── Onboarding Stepper (shown when 0 study sets) ── */
+const OnboardingStepper = () => {
+  const steps = [
+    { num: 1, label: "Upload", active: true },
+    { num: 2, label: "Generate", active: false },
+    { num: 3, label: "Study", active: false },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-8 text-center">
+      <div className="flex items-center justify-center gap-4 mb-6">
+        {steps.map((step, i) => (
+          <div key={step.num} className="flex items-center gap-4">
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                  step.active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {step.num}
+              </div>
+              <span className={`text-xs font-medium ${step.active ? "text-foreground" : "text-muted-foreground"}`}>
+                {step.label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className="w-12 h-[2px] bg-border -mt-5" />
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="text-sm text-muted-foreground mb-5">
+        Start with step 1 — upload any PDF or paste your notes.
+      </p>
+      <Link
+        to="/app/workspace/new"
+        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground transition-all duration-300 hover:scale-[1.02] active:scale-[0.97]"
+        style={{ background: "linear-gradient(135deg, hsl(262 83% 58%), hsl(173 80% 40%))" }}
+      >
+        Upload now <ArrowRight className="w-4 h-4" />
+      </Link>
+    </div>
+  );
+};
+
 export default Dashboard;
