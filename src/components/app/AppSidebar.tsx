@@ -10,6 +10,7 @@ const mainNav = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
   { icon: Library, label: "Library", path: "/app/library" },
   { icon: MessageSquare, label: "AI Tutor", path: "/app/chat" },
+  { icon: null, label: "Full Exam", path: "/app/exam", emoji: "🎓", proBadge: true },
 ];
 
 const AppSidebar = () => {
@@ -39,8 +40,31 @@ const AppSidebar = () => {
             : "text-muted-foreground hover:text-foreground hover:bg-muted/30 hover:translate-x-[2px]"
         }`}
       >
-        <item.icon className={`w-5 h-5 shrink-0 ${active ? "text-primary" : ""}`} />
-        {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
+        {item.icon ? (
+          <item.icon className={`w-5 h-5 shrink-0 ${active ? "text-primary" : ""}`} />
+        ) : (
+          <span className="w-5 h-5 shrink-0 flex items-center justify-center text-[15px]">{item.emoji}</span>
+        )}
+        {!collapsed && (
+          <>
+            <span className="whitespace-nowrap flex-1">{item.label}</span>
+            {item.proBadge && (
+              <span
+                className="text-[9px] font-bold uppercase"
+                style={{
+                  background: "rgba(251,191,36,0.1)",
+                  border: "1px solid rgba(251,191,36,0.3)",
+                  color: "rgba(251,191,36,0.9)",
+                  letterSpacing: "0.05em",
+                  borderRadius: 100,
+                  padding: "2px 6px",
+                }}
+              >
+                PRO
+              </span>
+            )}
+          </>
+        )}
       </Link>
     );
 
