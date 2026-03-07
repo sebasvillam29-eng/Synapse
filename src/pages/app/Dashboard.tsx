@@ -57,35 +57,41 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Recent Study Sets */}
+      {/* Recent Study Sets — or onboarding if empty */}
       <div className="mt-12 animate-fade-in" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Recent study sets</h2>
-          <Link to="/app/library" className="text-sm text-primary hover:underline">View all →</Link>
-        </div>
-        <div className="grid md:grid-cols-3 gap-4">
-          {recentSets.map((set, i) => (
-            <Link
-              to={`/app/workspace/${i + 1}`}
-              key={i}
-              className="rounded-2xl border border-border bg-card p-6 group hover:-translate-y-[3px] hover:shadow-[0_8px_30px_-10px_hsl(262_83%_58%/0.25)] transition-all duration-300 active:scale-[0.97]"
-            >
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: set.color + "20" }}>
-                  {set.emoji}
-                </div>
-                <h3 className="text-sm font-semibold text-foreground leading-tight flex-1 min-w-0">{set.title}</h3>
-                <ProgressRing value={set.mastery} />
-              </div>
-              <p className="text-[13px] text-muted-foreground mb-3">{set.meta}</p>
-              <div className="flex gap-2 flex-wrap">
-                {set.tags.map((tag) => (
-                  <span key={tag} className="text-[11px] px-2 py-0.5 rounded-full border border-border text-muted-foreground">{tag}</span>
-                ))}
-              </div>
-            </Link>
-          ))}
-        </div>
+        {recentSets.length === 0 ? (
+          <OnboardingStepper />
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Recent study sets</h2>
+              <Link to="/app/library" className="text-sm text-primary hover:underline">View all →</Link>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              {recentSets.map((set, i) => (
+                <Link
+                  to={`/app/workspace/${i + 1}`}
+                  key={i}
+                  className="rounded-2xl border border-border bg-card p-6 group hover:-translate-y-[3px] hover:shadow-[0_8px_30px_-10px_hsl(262_83%_58%/0.25)] transition-all duration-300 active:scale-[0.97]"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: set.color + "20" }}>
+                      {set.emoji}
+                    </div>
+                    <h3 className="text-sm font-semibold text-foreground leading-tight flex-1 min-w-0">{set.title}</h3>
+                    <ProgressRing value={set.mastery} />
+                  </div>
+                  <p className="text-[13px] text-muted-foreground mb-3">{set.meta}</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {set.tags.map((tag) => (
+                      <span key={tag} className="text-[11px] px-2 py-0.5 rounded-full border border-border text-muted-foreground">{tag}</span>
+                    ))}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Start Something New */}
