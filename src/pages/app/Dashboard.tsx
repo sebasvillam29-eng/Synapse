@@ -1,6 +1,6 @@
 import { useCountUp } from "@/hooks/useCountUp";
 import { Link } from "react-router-dom";
-import { FileText, Layers, Brain, Flame, Upload, ClipboardList, MessageSquare, TrendingUp } from "lucide-react";
+import { FileText, Layers, Brain, Flame, Upload, ClipboardList, MessageSquare, TrendingUp, ArrowRight } from "lucide-react";
 
 const stats = [
   { label: "Notes processed", value: 12, icon: FileText, suffix: "", badge: null },
