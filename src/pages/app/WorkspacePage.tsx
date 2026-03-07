@@ -102,10 +102,9 @@ const WorkspacePage = () => {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* LEFT panel */}
         <div
-          className="w-full border-b md:border-b-0 overflow-auto flex flex-col shrink-0 transition-all duration-300"
-          style={{ width: undefined, maxWidth: undefined, borderRight: "1px solid rgba(255,255,255,0.07)" }}
+          className="border-b md:border-b-0 overflow-auto flex flex-col shrink-0 transition-all duration-300"
+          style={{ width: leftWidth, borderRight: "1px solid rgba(255,255,255,0.07)" }}
         >
-          <div className={`flex-1 flex flex-col md:w-[${leftWidth}]`} style={{ width: leftWidth }}>
             {pdfState === "empty" && (
               <div className="flex-1 flex items-center justify-center p-12">
                 <button
