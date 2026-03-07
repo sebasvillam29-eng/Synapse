@@ -149,7 +149,7 @@ const ChatPage = () => {
                         ? "bg-primary text-primary-foreground rounded-br-md"
                         : "bg-card border border-border rounded-bl-md"
                     }`}>
-                      {msg.role === "ai" ? (
+                      {msg.role === "assistant" ? (
                         <div className="text-foreground/90 leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
                       ) : (
                         msg.content
