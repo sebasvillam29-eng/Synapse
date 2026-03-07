@@ -15,6 +15,7 @@ import FlashcardMode from "./pages/app/FlashcardMode";
 import QuizMode from "./pages/app/QuizMode";
 import ChatPage from "./pages/app/ChatPage";
 import ExamPage from "./pages/app/ExamPage";
+import MindMapPage from "./pages/app/MindMapPage";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="quiz/:id" element={<QuizMode />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="exam" element={<ExamPage />} />
+            <Route path="mindmap" element={<MindMapPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
