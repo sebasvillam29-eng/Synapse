@@ -16,6 +16,7 @@ import QuizMode from "./pages/app/QuizMode";
 import ChatPage from "./pages/app/ChatPage";
 import ExamPage from "./pages/app/ExamPage";
 import MindMapPage from "./pages/app/MindMapPage";
+import SettingsPage from "./pages/app/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="chat" element={<ChatPage />} />
             <Route path="exam" element={<ExamPage />} />
             <Route path="mindmap" element={<MindMapPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
