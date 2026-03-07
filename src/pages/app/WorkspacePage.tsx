@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   ChevronRight, ChevronLeft, Edit3, RefreshCw, Copy, Download,
-  Check, X, Upload, Loader2,
+  Check, X, Upload, Loader2, FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -23,16 +23,21 @@ const toolItems: { id: ToolId; emoji: string; title: string; sub: string }[] = [
 
 const WorkspacePage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [activeTool, setActiveTool] = useState<ToolId>("summary");
   const [toolKey, setToolKey] = useState(0);
   const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState("Loading...");
+  const [title, setTitle] = useState("New Session");
   const [notesText, setNotesText] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [hasNotes, setHasNotes] = useState(false);
   const [saved, setSaved] = useState(true);
   const [pasteMode, setPasteMode] = useState(false);
   const [pasteText, setPasteText] = useState("");
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Content state
   const [summarySections, setSummarySections] = useState<SummarySection[] | null>(null);
@@ -40,133 +45,172 @@ const WorkspacePage = () => {
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
   const [generating, setGenerating] = useState<ToolId | null>(null);
 
-  // Word count & reading time
   const wordCount = notesText.split(/\s+/).filter(Boolean).length;
   const readingMin = Math.max(1, Math.ceil(wordCount / 200));
 
   // Load session
   useEffect(() => {
     if (!id || id === "new") {
-      setTitle("New Session");
       setSessionLoaded(true);
       return;
     }
 
     const load = async () => {
-      const { data: session } = await supabase
+      const { data: session, error } = await supabase
         .from("study_sessions")
         .select("*")
         .eq("id", id)
         .maybeSingle();
 
-      if (session) {
-        setTitle(session.title);
-        setNotesText(session.notes_text || "");
-        setHasNotes(!!(session.notes_text && session.notes_text.trim()));
+      if (error || !session) {
+        // Invalid UUID or not found — treat as new
+        setSessionLoaded(true);
+        return;
       }
+
+      setSessionId(session.id);
+      setTitle(session.title);
+      setNotesText(session.notes_text || "");
+      setHasNotes(!!(session.notes_text && session.notes_text.trim()));
       setSessionLoaded(true);
 
-      // Load existing content
-      if (session) {
-        // Summary
-        const { data: summaries } = await supabase
-          .from("summaries")
-          .select("content")
-          .eq("session_id", session.id)
-          .maybeSingle();
-        if (summaries?.content) {
-          try { setSummarySections(JSON.parse(summaries.content)); } catch {}
-        }
+      // Load existing content in parallel
+      const [summRes, setsRes, quizRes] = await Promise.all([
+        supabase.from("summaries").select("content").eq("session_id", session.id).maybeSingle(),
+        supabase.from("flashcard_sets").select("id").eq("session_id", session.id).limit(1),
+        supabase.from("quizzes").select("id").eq("session_id", session.id).limit(1),
+      ]);
 
-        // Flashcards
-        const { data: sets } = await supabase
-          .from("flashcard_sets")
-          .select("id")
-          .eq("session_id", session.id)
-          .limit(1);
-        if (sets && sets.length > 0) {
-          const { data: cards } = await supabase
-            .from("flashcards")
-            .select("question, answer")
-            .eq("set_id", sets[0].id);
-          if (cards && cards.length > 0) {
-            setFlashcards(cards.map(c => {
-              const parts = c.answer.split("\n---\n");
-              return { question: c.question, answer: parts[0], why: parts[1] || "" };
-            }));
-          }
-        }
+      if (summRes.data?.content) {
+        try { setSummarySections(JSON.parse(summRes.data.content)); } catch {}
+      }
 
-        // Quiz
-        const { data: quizzes } = await supabase
-          .from("quizzes")
-          .select("id")
-          .eq("session_id", session.id)
-          .limit(1);
-        if (quizzes && quizzes.length > 0) {
-          const { data: qs } = await supabase
-            .from("quiz_questions")
-            .select("question, options, correct_answer")
-            .eq("quiz_id", quizzes[0].id);
-          if (qs && qs.length > 0) {
-            setQuizQuestions(qs.map(q => {
-              const opts = (q.options as string[]) || [];
-              return {
-                question: q.question,
-                options: opts,
-                correct_index: opts.indexOf(q.correct_answer),
-                explanation: "",
-              };
-            }));
-          }
+      if (setsRes.data && setsRes.data.length > 0) {
+        const { data: cards } = await supabase.from("flashcards").select("question, answer").eq("set_id", setsRes.data[0].id);
+        if (cards && cards.length > 0) {
+          setFlashcards(cards.map(c => {
+            const parts = c.answer.split("\n---\n");
+            return { question: c.question, answer: parts[0], why: parts[1] || "" };
+          }));
+        }
+      }
+
+      if (quizRes.data && quizRes.data.length > 0) {
+        const { data: qs } = await supabase.from("quiz_questions").select("question, options, correct_answer").eq("quiz_id", quizRes.data[0].id);
+        if (qs && qs.length > 0) {
+          setQuizQuestions(qs.map(q => {
+            const opts = (q.options as string[]) || [];
+            return { question: q.question, options: opts, correct_index: opts.indexOf(q.correct_answer), explanation: "" };
+          }));
         }
       }
     };
     load();
   }, [id]);
 
+  // Create or get session ID
+  const ensureSession = useCallback(async (): Promise<string | null> => {
+    if (sessionId) return sessionId;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast({ title: "Please log in", variant: "destructive" }); return null; }
+
+    const sessionTitle = title === "New Session" ? "Untitled Session" : title;
+    const { data: newSession, error } = await supabase
+      .from("study_sessions")
+      .insert({ user_id: user.id, title: sessionTitle, notes_text: "" })
+      .select()
+      .single();
+
+    if (error || !newSession) {
+      toast({ title: "Failed to create session", variant: "destructive" });
+      return null;
+    }
+
+    setSessionId(newSession.id);
+    navigate(`/app/workspace/${newSession.id}`, { replace: true });
+    return newSession.id;
+  }, [sessionId, title, navigate]);
+
   // Save title
   const saveTitle = useCallback(async () => {
     setEditing(false);
-    if (!id || id === "new") return;
+    if (!sessionId) return;
     setSaved(false);
-    await supabase.from("study_sessions").update({ title }).eq("id", id);
+    await supabase.from("study_sessions").update({ title }).eq("id", sessionId);
     setSaved(true);
-  }, [id, title]);
+  }, [sessionId, title]);
 
-  // Save notes (paste)
-  const handlePasteSubmit = useCallback(async () => {
-    if (!pasteText.trim()) return;
-    setSaved(false);
-
-    let sessionId = id;
-    if (!sessionId || sessionId === "new") {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast({ title: "Please log in", variant: "destructive" }); return; }
-      const { data: newSession } = await supabase
-        .from("study_sessions")
-        .insert({ user_id: user.id, title: title === "New Session" ? "Untitled Session" : title, notes_text: pasteText })
-        .select()
-        .single();
-      if (newSession) {
-        sessionId = newSession.id;
-        window.history.replaceState(null, "", `/app/workspace/${sessionId}`);
-      }
-    } else {
-      await supabase.from("study_sessions").update({ notes_text: pasteText }).eq("id", sessionId);
+  // Handle PDF upload
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (!file.type.includes("pdf") && !file.type.includes("text")) {
+      toast({ title: "Please upload a PDF or text file", variant: "destructive" });
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "File too large (max 20MB)", variant: "destructive" });
+      return;
     }
 
-    setNotesText(pasteText);
+    setUploadingPdf(true);
+
+    // For text files, read content directly
+    if (file.type.includes("text") || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
+      const text = await file.text();
+      await saveNotesText(text, file.name);
+      setUploadingPdf(false);
+      return;
+    }
+
+    // For PDFs, upload to storage and extract text client-side (basic)
+    const sid = await ensureSession();
+    if (!sid) { setUploadingPdf(false); return; }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setUploadingPdf(false); return; }
+
+    const filePath = `${user.id}/${sid}/${file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from("study-files")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      setUploadingPdf(false);
+      return;
+    }
+
+    // For PDFs, we can't extract text client-side easily.
+    // Set a placeholder notes text prompting the user to paste actual content.
+    const placeholderText = `[PDF uploaded: ${file.name}]\n\nNote: PDF text extraction is being processed. You can also paste your notes below to generate content immediately.`;
+    await saveNotesText(placeholderText, file.name);
+    setUploadingPdf(false);
+    toast({ title: "PDF uploaded!", description: "Paste your notes or key text from the PDF to generate study content." });
+  }, [ensureSession]);
+
+  const saveNotesText = useCallback(async (text: string, name?: string) => {
+    const sid = await ensureSession();
+    if (!sid) return;
+
+    setSaved(false);
+    await supabase.from("study_sessions").update({ notes_text: text }).eq("id", sid);
+    setNotesText(text);
     setHasNotes(true);
-    setPasteMode(false);
+    if (name) setFileName(name);
     setSaved(true);
+  }, [ensureSession]);
+
+  // Save pasted notes
+  const handlePasteSubmit = useCallback(async () => {
+    if (!pasteText.trim()) return;
+    await saveNotesText(pasteText);
+    setPasteMode(false);
     toast({ title: "Notes saved!" });
-  }, [id, title, pasteText]);
+  }, [pasteText, saveNotesText]);
 
   // Generate content
   const generateContent = useCallback(async (type: "summary" | "flashcards" | "quiz") => {
-    const sessionId = id;
-    if (!sessionId || sessionId === "new" || !hasNotes) {
+    if (!sessionId || !hasNotes) {
       toast({ title: "Upload or paste notes first", variant: "destructive" });
       return;
     }
@@ -183,9 +227,7 @@ const WorkspacePage = () => {
       const result = data.data;
       if (type === "summary") setSummarySections(result.sections);
       else if (type === "flashcards") setFlashcards(result.cards);
-      else if (type === "quiz") {
-        setQuizQuestions(result.questions);
-      }
+      else if (type === "quiz") setQuizQuestions(result.questions);
 
       toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} generated!` });
     } catch (e: any) {
@@ -194,7 +236,7 @@ const WorkspacePage = () => {
     } finally {
       setGenerating(null);
     }
-  }, [id, hasNotes]);
+  }, [sessionId, hasNotes]);
 
   const selectTool = useCallback((toolId: ToolId) => {
     setActiveTool(toolId);
@@ -203,7 +245,6 @@ const WorkspacePage = () => {
 
   const activeLabel = toolItems.find(t => t.id === activeTool)?.title ?? "";
 
-  // Dynamic sidebar sub labels
   const sidebarItems = toolItems.map(t => ({
     ...t,
     sub: t.id === "flashcards" && flashcards ? `${flashcards.length} cards` :
@@ -222,6 +263,19 @@ const WorkspacePage = () => {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.txt,.md,.doc,.docx"
+        className="hidden"
+        onChange={e => {
+          const file = e.target.files?.[0];
+          if (file) handleFileUpload(file);
+          e.target.value = "";
+        }}
+      />
+
       {/* ── Tool Sidebar ── */}
       <div className="shrink-0 flex flex-col" style={{ width: 200, background: "#0d0d16", borderRight: "1px solid rgba(255,255,255,0.07)" }}>
         <div style={{ padding: 16, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -277,7 +331,6 @@ const WorkspacePage = () => {
 
       {/* ── Main area ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
         <div className="shrink-0 flex items-center justify-between" style={{ height: 52, padding: "0 32px", background: "#0d0d16", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
           <div className="flex items-center gap-2 text-sm">
             <Link to="/app/library" className="text-muted-foreground hover:text-foreground transition-colors">Library</Link>
@@ -298,30 +351,28 @@ const WorkspacePage = () => {
           </div>
         </div>
 
-        {/* Meta bar */}
         {hasNotes && (
           <div className="shrink-0 text-[12px] text-muted-foreground" style={{ padding: "7px 24px", background: "rgba(255,255,255,0.015)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+            {fileName && <><FileText className="w-3 h-3 inline mr-1" />{fileName} &nbsp;·&nbsp; </>}
             ~{wordCount} words &nbsp;·&nbsp; Estimated study time:{" "}
             <span style={{ color: "rgba(157,127,224,0.7)" }}>{readingMin} min</span>
           </div>
         )}
 
-        {/* Content */}
         <div key={toolKey} className="flex-1 overflow-y-auto animate-fade-in" style={{ padding: "40px 48px" }}>
-          {/* If no notes, show upload prompt */}
           {!hasNotes ? (
-            <NoNotesPrompt pasteMode={pasteMode} setPasteMode={setPasteMode} pasteText={pasteText} setPasteText={setPasteText} onSubmit={handlePasteSubmit} />
+            <NoNotesPrompt
+              pasteMode={pasteMode} setPasteMode={setPasteMode}
+              pasteText={pasteText} setPasteText={setPasteText}
+              onSubmit={handlePasteSubmit}
+              onUploadClick={() => fileInputRef.current?.click()}
+              uploading={uploadingPdf}
+            />
           ) : (
             <>
-              {activeTool === "summary" && (
-                <SummaryContent title={title} sections={summarySections} generating={generating === "summary"} onGenerate={() => generateContent("summary")} />
-              )}
-              {activeTool === "flashcards" && (
-                <FlashcardsContent cards={flashcards} generating={generating === "flashcards"} onGenerate={() => generateContent("flashcards")} />
-              )}
-              {activeTool === "quiz" && (
-                <QuizContent questions={quizQuestions} generating={generating === "quiz"} onGenerate={() => generateContent("quiz")} />
-              )}
+              {activeTool === "summary" && <SummaryContent title={title} sections={summarySections} generating={generating === "summary"} onGenerate={() => generateContent("summary")} />}
+              {activeTool === "flashcards" && <FlashcardsContent cards={flashcards} generating={generating === "flashcards"} onGenerate={() => generateContent("flashcards")} />}
+              {activeTool === "quiz" && <QuizContent questions={quizQuestions} generating={generating === "quiz"} onGenerate={() => generateContent("quiz")} />}
               {activeTool === "exam" && <ExamContent />}
               {activeTool === "mindmap" && <MindMapContent />}
             </>
@@ -333,22 +384,34 @@ const WorkspacePage = () => {
 };
 
 /* ═══════════════ NO NOTES PROMPT ═══════════════ */
-const NoNotesPrompt = ({ pasteMode, setPasteMode, pasteText, setPasteText, onSubmit }: {
-  pasteMode: boolean; setPasteMode: (v: boolean) => void; pasteText: string; setPasteText: (v: string) => void; onSubmit: () => void;
+const NoNotesPrompt = ({ pasteMode, setPasteMode, pasteText, setPasteText, onSubmit, onUploadClick, uploading }: {
+  pasteMode: boolean; setPasteMode: (v: boolean) => void; pasteText: string; setPasteText: (v: string) => void; onSubmit: () => void; onUploadClick: () => void; uploading: boolean;
 }) => (
   <div className="flex flex-col items-center justify-center h-full max-w-md mx-auto text-center">
     {!pasteMode ? (
       <>
         <Upload className="w-12 h-12 mb-4" style={{ color: "rgba(124,92,191,0.6)" }} />
         <h2 className="text-lg font-semibold text-foreground mb-2">Add your study material</h2>
-        <p className="text-[14px] text-muted-foreground mb-6">Paste your notes below to generate summaries, flashcards, and quizzes with AI.</p>
-        <button
-          onClick={() => setPasteMode(true)}
-          className="text-[14px] font-semibold text-white transition-all hover:opacity-90"
-          style={{ padding: "12px 28px", borderRadius: 10, background: "linear-gradient(135deg, #7c5cbf, #5b3fa8)", boxShadow: "0 4px 16px rgba(124,92,191,0.3)" }}
-        >
-          Paste your notes →
-        </button>
+        <p className="text-[14px] text-muted-foreground mb-6">Upload a PDF or paste your notes to generate summaries, flashcards, and quizzes with AI.</p>
+        <div className="flex gap-3">
+          <button
+            onClick={onUploadClick}
+            disabled={uploading}
+            className="flex items-center gap-2 text-[14px] font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+            style={{ padding: "12px 24px", borderRadius: 10, border: "1.5px dashed rgba(124,92,191,0.4)", background: "rgba(124,92,191,0.06)", color: "#9d7fe0" }}
+          >
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            Upload PDF
+          </button>
+          <button
+            onClick={() => setPasteMode(true)}
+            className="text-[14px] font-semibold text-white transition-all hover:opacity-90"
+            style={{ padding: "12px 24px", borderRadius: 10, background: "linear-gradient(135deg, #7c5cbf, #5b3fa8)", boxShadow: "0 4px 16px rgba(124,92,191,0.3)" }}
+          >
+            Paste notes →
+          </button>
+        </div>
+        <p className="text-[12px] text-muted-foreground mt-4">up to 20MB · PDF, Word, or text files</p>
       </>
     ) : (
       <div className="w-full text-left">
@@ -403,28 +466,24 @@ const SummaryContent = ({ title, sections, generating, onGenerate }: {
       <div className="flex items-center justify-between mb-4">
         <span className="text-[11px] font-semibold uppercase" style={{ color: "#9d7fe0", letterSpacing: "0.06em" }}>AI Summary</span>
         <div className="flex gap-2">
-          {[{ icon: Copy, label: "Copy", action: () => {
-            navigator.clipboard.writeText(sections.map(s => `${s.heading}\n${s.body}`).join("\n\n"));
-            toast({ title: "Copied to clipboard" });
-          }}, { icon: Download, label: "Download" }].map(b => (
-            <button key={b.label} onClick={b.action} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors" style={{ padding: "8px 16px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <b.icon className="w-3.5 h-3.5" /> {b.label}
-            </button>
-          ))}
-          <button onClick={onGenerate} disabled={generating} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors" style={{ padding: "8px 16px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <button onClick={() => { navigator.clipboard.writeText(sections.map(s => `${s.heading}\n${s.body}`).join("\n\n")); toast({ title: "Copied!" }); }}
+            className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+            style={{ padding: "8px 16px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <Copy className="w-3.5 h-3.5" /> Copy
+          </button>
+          <button onClick={onGenerate} disabled={generating}
+            className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+            style={{ padding: "8px 16px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
             {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Regenerate
           </button>
         </div>
       </div>
-
       <h1 className="text-[28px] text-foreground mb-4" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>{title}</h1>
-
       <div className="flex gap-2 mb-10 flex-wrap">
         {[`${sections.length} sections`, `~${Math.ceil(sections.length * 1.5)} min read`].map(t => (
           <span key={t} className="text-[12px] rounded-full" style={{ padding: "4px 12px", background: "rgba(124,92,191,0.08)", border: "1px solid rgba(124,92,191,0.2)", color: "rgba(157,127,224,0.8)" }}>{t}</span>
         ))}
       </div>
-
       {sections.map((s, i) => (
         <div key={i} className="mb-9" style={{ paddingLeft: 20, borderLeft: "2px solid rgba(124,92,191,0.2)" }}>
           <div className="flex items-center gap-2.5 mb-2.5">
@@ -472,11 +531,9 @@ const FlashcardsContent = ({ cards, generating, onGenerate }: {
           {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Regenerate
         </button>
       </div>
-
       <div className="w-full max-w-[480px] h-[3px] rounded-full mb-8" style={{ background: "rgba(255,255,255,0.06)" }}>
         <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, background: "linear-gradient(90deg, #7c5cbf, #2dd4bf)" }} />
       </div>
-
       <div className="w-full max-w-[480px] cursor-pointer mb-6" style={{ height: 220, perspective: 800 }} onClick={flip}>
         <div className="relative w-full h-full transition-transform duration-500" style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "" }}>
           <div className="absolute inset-0 flex flex-col justify-center p-6" style={{ backfaceVisibility: "hidden", borderRadius: 14, background: "rgba(124,92,191,0.07)", border: "1px solid rgba(124,92,191,0.25)" }}>
@@ -497,7 +554,6 @@ const FlashcardsContent = ({ cards, generating, onGenerate }: {
           </div>
         </div>
       </div>
-
       <div className="flex items-center gap-4 mb-4">
         <button onClick={prev} disabled={idx === 0} className="flex items-center justify-center transition-colors disabled:opacity-30" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)" }}>
           <ChevronLeft className="w-5 h-5 text-foreground" />
@@ -506,7 +562,6 @@ const FlashcardsContent = ({ cards, generating, onGenerate }: {
           <ChevronRight className="w-5 h-5 text-foreground" />
         </button>
       </div>
-
       <p className="text-[12px]" style={{ color: "rgba(232,232,240,0.2)" }}>← → arrow keys · Space to flip</p>
     </div>
   );
@@ -527,18 +582,8 @@ const QuizContent = ({ questions, generating, onGenerate }: {
   const isCorrect = selected === current.correct_index;
   const progress = ((qIdx + 1) / questions.length) * 100;
 
-  const handleSelect = (i: number) => {
-    if (answered) return;
-    setSelected(i);
-    if (i === current.correct_index) setScore(s => s + 1);
-  };
-
-  const handleNext = () => {
-    if (qIdx < questions.length - 1) {
-      setQIdx(q => q + 1);
-      setSelected(null);
-    }
-  };
+  const handleSelect = (i: number) => { if (answered) return; setSelected(i); if (i === current.correct_index) setScore(s => s + 1); };
+  const handleNext = () => { if (qIdx < questions.length - 1) { setQIdx(q => q + 1); setSelected(null); } };
 
   return (
     <div style={{ maxWidth: 560 }}>
@@ -551,21 +596,16 @@ const QuizContent = ({ questions, generating, onGenerate }: {
           </button>
         </div>
       </div>
-
       <div className="w-full h-[3px] rounded-full mb-8" style={{ background: "rgba(255,255,255,0.06)" }}>
         <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, background: "linear-gradient(90deg, #7c5cbf, #2dd4bf)" }} />
       </div>
-
       <span className="inline-block text-[12px] font-semibold rounded-full mb-3" style={{ padding: "4px 12px", background: "rgba(124,92,191,0.12)", color: "#9d7fe0" }}>
         Question {qIdx + 1} of {questions.length}
       </span>
       <p className="text-[20px] text-foreground mb-6" style={{ fontFamily: "'Instrument Serif', serif", lineHeight: 1.5 }}>{current.question}</p>
-
       <div className="flex flex-col gap-2.5 mb-4">
         {current.options.map((opt, i) => {
-          let bg = "rgba(255,255,255,0.03)";
-          let border = "rgba(255,255,255,0.08)";
-          let color = "#e8e8f0";
+          let bg = "rgba(255,255,255,0.03)", border = "rgba(255,255,255,0.08)", color = "#e8e8f0";
           if (answered) {
             if (i === current.correct_index) { bg = "rgba(45,212,191,0.1)"; border = "rgba(45,212,191,0.4)"; color = "#2dd4bf"; }
             else if (i === selected) { bg = "rgba(239,68,68,0.1)"; border = "rgba(239,68,68,0.4)"; color = "#ef4444"; }
@@ -580,16 +620,12 @@ const QuizContent = ({ questions, generating, onGenerate }: {
           );
         })}
       </div>
-
       {answered && current.explanation && (
         <div className="animate-fade-in mb-6" style={{ borderLeft: `3px solid ${isCorrect ? "#2dd4bf" : "#ef4444"}`, background: "rgba(255,255,255,0.03)", padding: "14px 18px", borderRadius: 10, marginTop: 16 }}>
-          <p className="text-[12px] font-bold mb-1" style={{ color: isCorrect ? "#2dd4bf" : "#ef4444" }}>
-            {isCorrect ? "✓ Correct — here's why:" : "✗ Incorrect — here's why:"}
-          </p>
+          <p className="text-[12px] font-bold mb-1" style={{ color: isCorrect ? "#2dd4bf" : "#ef4444" }}>{isCorrect ? "✓ Correct — here's why:" : "✗ Incorrect — here's why:"}</p>
           <p className="text-[14px]" style={{ color: "rgba(232,232,240,0.7)", lineHeight: 1.7 }}>{current.explanation}</p>
         </div>
       )}
-
       {answered && qIdx < questions.length - 1 && (
         <button onClick={handleNext} className="animate-fade-in text-[14px] font-semibold text-white transition-all duration-200 hover:opacity-90" style={{ padding: "11px 28px", borderRadius: 10, background: "linear-gradient(135deg, #7c5cbf, #5b3fa8)", boxShadow: "0 4px 16px rgba(124,92,191,0.3)" }}>
           Next →
@@ -603,12 +639,8 @@ const QuizContent = ({ questions, generating, onGenerate }: {
 const ExamContent = () => (
   <div style={{ maxWidth: 560 }} className="animate-fade-in">
     <h1 className="text-[24px] text-foreground mb-2" style={{ fontFamily: "'Instrument Serif', serif" }}>Full Exam</h1>
-    <p className="text-[14px] text-muted-foreground mb-6" style={{ lineHeight: 1.7 }}>
-      20 multiple-choice questions · 30-minute time limit · Results and full answer breakdown after submission.
-    </p>
-    <button className="text-[15px] font-semibold text-white transition-all hover:opacity-90" style={{ padding: "14px 32px", borderRadius: 10, background: "linear-gradient(135deg, #7c5cbf, #5b3fa8)", boxShadow: "0 4px 20px rgba(124,92,191,0.3)" }}>
-      Begin Exam →
-    </button>
+    <p className="text-[14px] text-muted-foreground mb-6" style={{ lineHeight: 1.7 }}>20 multiple-choice questions · 30-minute time limit · Results and full answer breakdown after submission.</p>
+    <button className="text-[15px] font-semibold text-white transition-all hover:opacity-90" style={{ padding: "14px 32px", borderRadius: 10, background: "linear-gradient(135deg, #7c5cbf, #5b3fa8)", boxShadow: "0 4px 20px rgba(124,92,191,0.3)" }}>Begin Exam →</button>
   </div>
 );
 
@@ -616,29 +648,20 @@ const ExamContent = () => (
 const MindMapContent = () => {
   const center = { x: 250, y: 150 };
   const branches = [
-    { x: 80, y: 50, label: "Topic 1" },
-    { x: 420, y: 50, label: "Topic 2" },
-    { x: 60, y: 250, label: "Topic 3" },
-    { x: 440, y: 250, label: "Topic 4" },
+    { x: 80, y: 50, label: "Topic 1" }, { x: 420, y: 50, label: "Topic 2" },
+    { x: 60, y: 250, label: "Topic 3" }, { x: 440, y: 250, label: "Topic 4" },
     { x: 250, y: 280, label: "Topic 5" },
   ];
-
   return (
     <div className="animate-fade-in">
       <h1 className="text-[24px] text-foreground mb-6" style={{ fontFamily: "'Instrument Serif', serif" }}>Mind Map</h1>
       <div className="relative h-[320px] w-full max-w-[520px] overflow-hidden">
         <svg className="absolute inset-0 w-full h-full">
-          {branches.map((b, i) => (
-            <line key={i} x1={center.x} y1={center.y} x2={b.x} y2={b.y} stroke="rgba(124,92,191,0.25)" strokeWidth="2" />
-          ))}
+          {branches.map((b, i) => <line key={i} x1={center.x} y1={center.y} x2={b.x} y2={b.y} stroke="rgba(124,92,191,0.25)" strokeWidth="2" />)}
         </svg>
-        <div className="absolute px-4 py-2 rounded-xl text-sm font-bold animate-scale-in" style={{ left: center.x - 45, top: center.y - 16, background: "rgba(124,92,191,0.2)", border: "1px solid rgba(124,92,191,0.4)", color: "#9d7fe0" }}>
-          Central
-        </div>
+        <div className="absolute px-4 py-2 rounded-xl text-sm font-bold animate-scale-in" style={{ left: center.x - 45, top: center.y - 16, background: "rgba(124,92,191,0.2)", border: "1px solid rgba(124,92,191,0.4)", color: "#9d7fe0" }}>Central</div>
         {branches.map((b, i) => (
-          <div key={i} className="absolute px-3 py-1.5 rounded-lg text-xs font-medium text-foreground animate-scale-in" style={{ left: b.x - 35, top: b.y - 12, animationDelay: `${(i + 1) * 100}ms`, animationFillMode: "both", background: "#111120", border: "1px solid rgba(255,255,255,0.08)" }}>
-            {b.label}
-          </div>
+          <div key={i} className="absolute px-3 py-1.5 rounded-lg text-xs font-medium text-foreground animate-scale-in" style={{ left: b.x - 35, top: b.y - 12, animationDelay: `${(i + 1) * 100}ms`, animationFillMode: "both", background: "#111120", border: "1px solid rgba(255,255,255,0.08)" }}>{b.label}</div>
         ))}
       </div>
     </div>
