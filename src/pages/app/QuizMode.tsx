@@ -35,6 +35,17 @@ const QuizMode = () => {
     return () => clearInterval(t);
   }, [done]);
 
+  // Enter key for next
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && selected !== null && !sliding && !done) {
+        next();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selected, sliding, done, next]);
+
   const next = useCallback(() => {
     setAnswers((a) => [...a, selected]);
     setSliding(true);
