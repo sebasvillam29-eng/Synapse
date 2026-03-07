@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import KbdHint from "@/components/app/KbdHint";
 
 const mockCards = [
   { front: "What is the primary function of photosynthesis?", back: "To convert light energy into chemical energy (glucose) using CO₂ and water." },
