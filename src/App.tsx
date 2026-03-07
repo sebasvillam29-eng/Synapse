@@ -15,6 +15,7 @@ import FlashcardMode from "./pages/app/FlashcardMode";
 import QuizMode from "./pages/app/QuizMode";
 import ChatPage from "./pages/app/ChatPage";
 import ExamPage from "./pages/app/ExamPage";
+import MindMapPage from "./pages/app/MindMapPage";
 
 const queryClient = new QueryClient();
 
