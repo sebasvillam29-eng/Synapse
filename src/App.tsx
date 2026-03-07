@@ -34,6 +34,7 @@ const App = () => (
             <Route path="flashcards/:id" element={<FlashcardMode />} />
             <Route path="quiz/:id" element={<QuizMode />} />
             <Route path="chat" element={<ChatPage />} />
+            <Route path="exam" element={<ExamPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
