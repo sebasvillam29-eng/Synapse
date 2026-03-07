@@ -38,6 +38,7 @@ const App = () => (
             <Route path="chat" element={<ChatPage />} />
             <Route path="exam" element={<ExamPage />} />
             <Route path="mindmap" element={<MindMapPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
