@@ -184,7 +184,6 @@ const WorkspacePage = () => {
                 </div>
               </div>
             )}
-          </div>
         </div>
 
         {/* RIGHT — AI tools */}
