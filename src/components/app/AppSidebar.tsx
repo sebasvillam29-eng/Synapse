@@ -10,6 +10,7 @@ const mainNav = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
   { icon: Library, label: "Library", path: "/app/library" },
   { icon: MessageSquare, label: "AI Tutor", path: "/app/chat" },
+  { icon: null, label: "Full Exam", path: "/app/exam", emoji: "🎓", proBadge: true },
 ];
 
 const AppSidebar = () => {

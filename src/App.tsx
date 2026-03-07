@@ -14,6 +14,7 @@ import WorkspacePage from "./pages/app/WorkspacePage";
 import FlashcardMode from "./pages/app/FlashcardMode";
 import QuizMode from "./pages/app/QuizMode";
 import ChatPage from "./pages/app/ChatPage";
+import ExamPage from "./pages/app/ExamPage";
 
 const queryClient = new QueryClient();
 
