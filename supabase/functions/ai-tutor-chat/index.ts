@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -13,36 +13,44 @@ serve(async (req) => {
 
   try {
     const { messages } = await req.json();
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!apiKey) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
+    }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        max_tokens: 800,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are Synapse AI, a friendly expert study tutor. Be concise (3-4 sentences max), encouraging, and educational. Use bullet points for lists. Use markdown formatting (bold for key terms). Always be helpful and accurate.",
-          },
-          ...messages,
-        ],
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: "You are Synapse AI, a friendly expert study tutor. Be concise and encouraging. Use bullet points for lists. Help students understand concepts, create practice questions, and summarize topics. Start responses with a relevant emoji.",
+        messages: messages.map((m: { role: string; content: string }) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: m.content,
+        })),
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Anthropic API error:", response.status, errorText);
+      throw new Error(`Anthropic API error: ${response.status}`);
+    }
+
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content ?? "Sorry, I couldn't generate a response.";
+    const reply = data.content?.[0]?.text ?? "Sorry, I couldn't generate a response.";
 
     return new Response(JSON.stringify({ reply }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ reply: "Sorry, something went wrong. Please try again." }), {
+    console.error("Edge function error:", error);
+    return new Response(JSON.stringify({ reply: "⚠️ Something went wrong. Try again." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
