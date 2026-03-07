@@ -140,7 +140,7 @@ const ChatPage = () => {
                 <div
                   key={i}
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
-                  onMouseEnter={() => msg.role === "ai" && setHoveredMsg(i)}
+                  onMouseEnter={() => msg.role === "assistant" && setHoveredMsg(i)}
                   onMouseLeave={() => setHoveredMsg(null)}
                 >
                   <div className={`max-w-[80%] ${msg.role === "user" ? "" : ""}`}>
